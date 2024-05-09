@@ -1,48 +1,45 @@
 // TODO - move to constant file
-const GALAXY_SIZE: usize = 2_usize.pow(15);
+// also does this need to be a const?
+pub const GALAXY_SIZE: usize = 2_usize.pow(10);
 
-type Vector = [f32; 3];
-type GalaxyVector = [Vector; GALAXY_SIZE];
+pub type Vector3D = [f32; 3];
 
 pub fn get_new_positions(
-    positions: &mut GalaxyVector,
-    velocities: &mut GalaxyVector,
+    positions: &Vec<Vector3D>,
+    velocities: &Vec<Vector3D>,
     time_step: f32,
     softening_factor: f32,
-) -> GalaxyVector {
-    let accelerations = get_accelerations(positions, softening_factor);
+) -> Vec<Vector3D> {
+    return (0..GALAXY_SIZE)
+        .map(|i| {
+            let acceleration = get_acceleration(i, &positions, softening_factor);
 
-    for i in 0..GALAXY_SIZE {
-        for j in 0..3 {
-            velocities[i][j] += accelerations[i][j] * time_step;
-            positions[i][j] += velocities[i][j] * time_step;
-        }
-    }
-
-    return *positions;
+            return [
+                (velocities[i][0] + acceleration[0] * time_step) * time_step,
+                (velocities[i][1] + acceleration[1] * time_step) * time_step,
+                (velocities[i][2] + acceleration[2] * time_step) * time_step,
+            ];
+        })
+        .collect();
 }
 
-fn get_accelerations(positions: &GalaxyVector, softening_factor: f32) -> GalaxyVector {
-    let mut accelerations = [[0_f32; 3]; GALAXY_SIZE];
+pub fn get_acceleration(body: usize, positions: &Vec<Vector3D>, softening_factor: f32) -> Vector3D {
+    let postion = positions[body];
 
-    for i in 0..GALAXY_SIZE {
-        for j in 0..GALAXY_SIZE {
-            if i == j {
-                continue;
-            };
-
-            let dx = positions[j][0] - positions[i][0];
-            let dy = positions[j][1] - positions[i][1];
-            let dz = positions[j][2] - positions[i][2];
+    return positions
+        .into_iter()
+        .fold([0_f32, 0_f32, 0_f32], |acc, other_pos| {
+            let dx = other_pos[0] - postion[0];
+            let dy = other_pos[1] - postion[1];
+            let dz = other_pos[2] - postion[2];
 
             let dr_squared = dx * dx + dy * dy + dz * dz + softening_factor * softening_factor;
             let dr_power_n32 = 1_f32 / (dr_squared.sqrt() * dr_squared);
 
-            accelerations[i][0] += dx * dr_power_n32;
-            accelerations[i][1] += dy * dr_power_n32;
-            accelerations[i][2] += dz * dr_power_n32;
-        }
-    }
-
-    return accelerations;
+            return [
+                acc[0] + dx * dr_power_n32,
+                acc[1] + dy * dr_power_n32,
+                acc[2] + dz * dr_power_n32,
+            ];
+        });
 }

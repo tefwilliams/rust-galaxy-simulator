@@ -1,64 +1,87 @@
-use std::f32::consts::PI;
-use rand::distributions::uniform::{UniformFloat, UniformSampler};
+use crate::{
+    accelerations::{get_acceleration, Vector3D},
+    GALAXY_SIZE,
+};
+use randomkit::{
+    dist::{Exponential, Normal, Uniform},
+    Rng, Sample,
+};
+use std::f64::consts::PI;
 
+const SCALE_FACTOR: f64 = 1_f64;
 
-// TODO - move to constant file
-const GALAXY_SIZE: usize = 2_usize.pow(15);
-
-
-pub fn create_galaxy() -> ([f32; GALAXY_SIZE], [f32; GALAXY_SIZE]) {
+pub fn create_galaxy() -> (Vec<Vector3D>, Vec<Vector3D>) {
     // Sets positions for points
     let positions = create_positions();
 
     // Finds the initial velocity of each point
-    let velocities = initialize_velocities(positions);
+    let velocities = initialize_velocities(&positions);
 
     return (positions, velocities);
 }
 
+fn create_positions() -> Vec<Vector3D> {
+    let mut rng1 = Rng::from_seed(1);
 
-fn create_positions() -> [f32; GALAXY_SIZE] {
-    // Generates radial and angular components in 2D
-    let points_r = Exp(size, n);
-    let points_p = UniformFloat::new(0, 2_f32 * PI);
+    let radial_generator = Exponential::new(SCALE_FACTOR).unwrap();
+    let angular_generator = Uniform::new(0_f64, 2_f64 * PI).unwrap();
 
-    // Converts to Cartesian
-    points_x = points_r * np.cos(points_p)
-    points_y = points_r * np.sin(points_p)
+    // Generates radial and angular components in 2D with provided
+    // distributions and converts them to Cartesian coordinates
+    let cartesian = (0..GALAXY_SIZE)
+        .map(|_| {
+            (
+                radial_generator.sample(&mut rng1) as f32,
+                angular_generator.sample(&mut rng1) as f32,
+            )
+        })
+        .map(|(r, p)| (r * p.cos(), r * p.sin()));
 
     // Adds 'noise' to all 3D to generate points
-    noise_magnitude = size / 5
+    let mut rng2 = Rng::from_seed(2);
 
-    points = np.empty((n, 3), dtype=np.float64)
-    points[:, 0] = np.random.normal(0, noise_magnitude, n) + points_x
-    points[:, 1] = np.random.normal(0, noise_magnitude, n) + points_y
-    points[:, 2] = np.random.normal(0, noise_magnitude, n)
-
-    return points
+    let normal_generator = Normal::new(0_f64, SCALE_FACTOR / 5_f64).unwrap();
+    return cartesian
+        .map(|(x, y)| {
+            [
+                normal_generator.sample(&mut rng2) as f32 + x,
+                normal_generator.sample(&mut rng2) as f32 + y,
+                normal_generator.sample(&mut rng2) as f32,
+            ]
+        })
+        .collect();
 }
 
+fn initialize_velocities(positions: &Vec<Vector3D>) -> Vec<Vector3D> {
+    return (0..GALAXY_SIZE)
+        .map(|i| {
+            // Gets initial acceleration of the point
+            let acceleration = get_acceleration(i, positions, 0_f32);
 
-fn initialize_velocities(positions: [f32; GALAXY_SIZE]) -> [f32; GALAXY_SIZE] {
-    // Gets initial acceleration of each point
-    initial_accelerations = get_accelerations(positions, 0)
+            // Calculates the speed of particle for circular motion
+            let position_magnitude: f32 = positions[i].iter().sum();
+            let acceleration_magnitude: f32 = acceleration.iter().sum();
+            let velocity_magnitude = (position_magnitude * acceleration_magnitude).sqrt();
 
-    // Calculates the speed of particle for circular motion
-    position_magnitudes = np.linalg.norm(positions, axis=1)
-    acceleration_magnitudes = np.linalg.norm(initial_accelerations, axis=1)
-    velocity_magnitudes = np.sqrt(position_magnitudes * acceleration_magnitudes)
+            // Calculates unit vectors in 3D
+            let mut rng = Rng::from_seed(1);
+            let normal_generator = Normal::new(0_f64, 0.1).unwrap();
 
-    // Calculates unit vectors in 3D
-    radial_vectors = initial_accelerations[:, 0:2]
-    vertical_vectors = np.random.normal(0, 0.1, len(positions))
+            let velocity_direction = [
+                -acceleration[1],
+                acceleration[0],
+                normal_generator.sample(&mut rng) as f32,
+            ];
 
-    velocity_directions = np.zeros_like(positions)
-    velocity_directions[:, 0] = - radial_vectors[:, 1]
-    velocity_directions[:, 1] = radial_vectors[:, 0]
-    velocity_directions[:, 2] = vertical_vectors
+            // Adds normalisation for correct speed (due to addition of z-component)
+            let normalisation: f32 = velocity_direction.iter().sum();
 
-    // Adds normalisation for correct speed (due to addition of z-component)
-    normalisation = np.linalg.norm(velocity_directions, axis=1)
-
-    // Generates velocities
-    return velocity_magnitudes[:, None] * velocity_directions / normalisation[:, None]
+            // Generates velocities
+            return [
+                velocity_magnitude * velocity_direction[0] / normalisation,
+                velocity_magnitude * velocity_direction[1] / normalisation,
+                velocity_magnitude * velocity_direction[2] / normalisation,
+            ];
+        })
+        .collect();
 }
