@@ -5,34 +5,44 @@ type Vector = [f32; 3];
 type GalaxyVector = [Vector; GALAXY_SIZE];
 
 pub fn get_new_positions(
-    positions: &GalaxyVector,
-    velocities: &GalaxyVector,
+    positions: &mut GalaxyVector,
+    velocities: &mut GalaxyVector,
     time_step: f32,
     softening_factor: f32,
 ) -> GalaxyVector {
     let accelerations = get_accelerations(positions, softening_factor);
 
-    for i in 0..velocities.len() {
+    for i in 0..GALAXY_SIZE {
         for j in 0..3 {
             velocities[i][j] += accelerations[i][j] * time_step;
             positions[i][j] += velocities[i][j] * time_step;
         }
     }
 
-    return positions;
+    return *positions;
 }
 
 fn get_accelerations(positions: &GalaxyVector, softening_factor: f32) -> GalaxyVector {
-    // for position in positions {
-    //     dx = positions[j, 0] - positions[i, 0]
-    //     dy = positions[j, 1] - positions[i, 1]
-    //     dz = positions[j, 2] - positions[i, 2]
-    //     drSquared = dx * dx + dy * dy + dz * dz + softening_factor * softening_factor
-    //     drPowerN32 = nb.float32(1.0) / (math.sqrt(drSquared) * drSquared)
-    //     accelerations[i, 0] += dx * drPowerN32
-    //     accelerations[i, 1] += dy * drPowerN32
-    //     accelerations[i, 2] += dz * drPowerN32
-    // }
+    let mut accelerations = [[0_f32; 3]; GALAXY_SIZE];
 
-    return positions;
+    for i in 0..GALAXY_SIZE {
+        for j in 0..GALAXY_SIZE {
+            if i == j {
+                continue;
+            };
+
+            let dx = positions[j][0] - positions[i][0];
+            let dy = positions[j][1] - positions[i][1];
+            let dz = positions[j][2] - positions[i][2];
+
+            let dr_squared = dx * dx + dy * dy + dz * dz + softening_factor * softening_factor;
+            let dr_power_n32 = 1_f32 / (dr_squared.sqrt() * dr_squared);
+
+            accelerations[i][0] += dx * dr_power_n32;
+            accelerations[i][1] += dy * dr_power_n32;
+            accelerations[i][2] += dz * dr_power_n32;
+        }
+    }
+
+    return accelerations;
 }
