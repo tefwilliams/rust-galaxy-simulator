@@ -1,6 +1,8 @@
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+
 // TODO - move to constant file
 // also does this need to be a const?
-pub const GALAXY_SIZE: usize = 2_usize.pow(10);
+pub const GALAXY_SIZE: usize = 2_usize.pow(9);
 
 pub type Vector3D = [f32; 3];
 
@@ -11,6 +13,7 @@ pub fn get_new_positions(
     softening_factor: f32,
 ) -> Vec<Vector3D> {
     return (0..GALAXY_SIZE)
+        .into_par_iter()
         .map(|i| {
             let acceleration = get_acceleration(i, &positions, softening_factor);
 

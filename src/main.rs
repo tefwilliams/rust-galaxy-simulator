@@ -27,12 +27,12 @@ fn main() {
     }
 
     let runtime = start.elapsed();
-    let seconds = runtime.as_secs();
+    let seconds = runtime.as_millis();
 
     print!(
         "
     
-Time to run: {seconds}s
+Time to run: {seconds}ms
 Number of particles: {GALAXY_SIZE}
 Number of iterations: {N_STEPS}
     ",
