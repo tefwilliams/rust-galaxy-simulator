@@ -1,4 +1,5 @@
 use std::time::Instant;
+mod accelerations;
 mod galaxy;
 
 fn main() {
