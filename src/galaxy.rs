@@ -53,13 +53,14 @@ fn create_positions() -> Vec<Vector3D> {
 }
 
 fn initialize_velocities(positions: &Vec<Vector3D>) -> Vec<Vector3D> {
-    return (0..GALAXY_SIZE)
-        .map(|i| {
+    return positions
+        .into_iter()
+        .map(|pos| {
             // Gets initial acceleration of the point
-            let acceleration = get_acceleration(i, positions, 0_f32);
+            let acceleration = get_acceleration(pos, positions, 0_f32);
 
             // Calculates the speed of particle for circular motion
-            let position_magnitude: f32 = positions[i].iter().sum();
+            let position_magnitude: f32 = pos.iter().sum();
             let acceleration_magnitude: f32 = acceleration.iter().sum();
             let velocity_magnitude = (position_magnitude * acceleration_magnitude).sqrt();
 

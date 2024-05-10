@@ -11,13 +11,14 @@ fn main() {
 
     let mut points_record = Box::new([[[0_f32; 3]; accelerations::GALAXY_SIZE]; N_STEPS]);
 
-    let time_step = 10_f32.powi(-4);
-    let softening_factor = 10_f32.powi(-4);
-
     let start = Instant::now();
     for i in 0..N_STEPS {
-        let new_positions =
-            accelerations::get_new_positions(&positions, &velocities, time_step, softening_factor);
+        let new_positions = accelerations::get_new_positions(
+            &positions,
+            &velocities,
+            10_f32.powi(-4),
+            0_f32.powi(-4),
+        );
 
         for j in 0..accelerations::GALAXY_SIZE {
             for k in 0..3 {
