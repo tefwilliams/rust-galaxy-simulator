@@ -1,4 +1,4 @@
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
 // TODO - move to constant file
 // also does this need to be a const?
@@ -7,26 +7,32 @@ pub const GALAXY_SIZE: usize = 2_usize.pow(12);
 pub type Vector3D = [f32; 3];
 
 pub fn get_new_positions(
-    positions: &mut Vec<Vector3D>,
-    velocities: &mut Vec<Vector3D>,
+    positions: &Vec<Vector3D>,
+    velocities: &Vec<Vector3D>,
     time_step: f32,
     softening_factor: f32,
-) -> Vec<Vector3D> {
-    return (0..GALAXY_SIZE)
-        .map(|i| {
-            let acceleration = get_acceleration(&positions[i], &positions, softening_factor);
+) -> (Vec<Vector3D>, Vec<Vector3D>) {
+    return positions
+        .into_par_iter()
+        .zip(velocities)
+        .map(|(pos, vel)| {
+            let acceleration = get_acceleration(&pos, &positions, softening_factor);
 
-            velocities[i][0] += acceleration[0] * time_step;
-            velocities[i][1] += acceleration[1] * time_step;
-            velocities[i][2] += acceleration[2] * time_step;
+            let new_vel = [
+                vel[0] + acceleration[0] * time_step,
+                vel[1] + acceleration[1] * time_step,
+                vel[2] + acceleration[2] * time_step,
+            ];
 
-            positions[i][0] += velocities[i][0] * time_step;
-            positions[i][1] += velocities[i][1] * time_step;
-            positions[i][2] += velocities[i][2] * time_step;
+            let new_pos = [
+                pos[0] + new_vel[0] * time_step,
+                pos[1] + new_vel[1] * time_step,
+                pos[2] + new_vel[2] * time_step,
+            ];
 
-            return positions[i];
+            return (new_pos, new_vel);
         })
-        .collect();
+        .unzip();
 }
 
 pub fn get_acceleration(
