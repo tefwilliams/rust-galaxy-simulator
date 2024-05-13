@@ -1,17 +1,11 @@
 use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
-// TODO - move to constant file
-// also does this need to be a const?
-pub const GALAXY_SIZE: usize = 2_usize.pow(12);
-
-pub type Vector3D = [f32; 3];
-
 pub fn get_new_positions(
-    positions: &Vec<Vector3D>,
-    velocities: &Vec<Vector3D>,
+    positions: &Vec<[f32; 3]>,
+    velocities: &Vec<[f32; 3]>,
     time_step: f32,
     softening_factor: f32,
-) -> (Vec<Vector3D>, Vec<Vector3D>) {
+) -> (Vec<[f32; 3]>, Vec<[f32; 3]>) {
     return positions
         .into_par_iter()
         .zip(velocities)
@@ -36,10 +30,10 @@ pub fn get_new_positions(
 }
 
 pub fn get_acceleration(
-    position: &Vector3D,
-    positions: &Vec<Vector3D>,
+    position: &[f32; 3],
+    positions: &Vec<[f32; 3]>,
     softening_factor: f32,
-) -> Vector3D {
+) -> [f32; 3] {
     return positions
         .into_iter()
         .fold([0_f32, 0_f32, 0_f32], |acc, other_pos| {

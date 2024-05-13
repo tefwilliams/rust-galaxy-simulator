@@ -1,16 +1,14 @@
-use crate::{
-    accelerations::{get_acceleration, Vector3D},
-    GALAXY_SIZE,
-};
+use crate::accelerations::get_acceleration;
+use crate::helpers::magnitude;
 use rand::thread_rng;
 use rand_distr::{Distribution, Exp, Normal, Uniform};
 use std::f64::consts::PI;
 
-const SCALE_FACTOR: f64 = 1_f64;
+const SCALE_FACTOR: f64 = 1.0;
 
-pub fn create_galaxy() -> (Vec<Vector3D>, Vec<Vector3D>) {
+pub fn create_galaxy(galaxy_size: u32) -> (Vec<[f32; 3]>, Vec<[f32; 3]>) {
     // Sets positions for points
-    let positions = create_positions();
+    let positions = create_positions(galaxy_size);
 
     // Finds the initial velocity of each point
     let velocities = initialize_velocities(&positions);
@@ -18,15 +16,15 @@ pub fn create_galaxy() -> (Vec<Vector3D>, Vec<Vector3D>) {
     return (positions, velocities);
 }
 
-fn create_positions() -> Vec<Vector3D> {
+fn create_positions(galaxy_size: u32) -> Vec<[f32; 3]> {
     let mut rng = thread_rng();
 
     let radial_generator = Exp::new(SCALE_FACTOR).unwrap();
-    let angular_generator = Uniform::new(0_f64, 2_f64 * PI);
+    let angular_generator = Uniform::new(0.0, 2.0 * PI);
 
     // Generates radial and angular components in 2D with provided
     // distributions and converts them to Cartesian coordinates
-    let cartesian = (0..GALAXY_SIZE)
+    let cartesian = (0..galaxy_size)
         .map(|_| {
             (
                 radial_generator.sample(&mut rng) as f32,
@@ -37,7 +35,7 @@ fn create_positions() -> Vec<Vector3D> {
 
     // Adds 'noise' to all 3D to generate points
     let mut rng = thread_rng();
-    let normal_generator = Normal::new(0_f64, SCALE_FACTOR / 5_f64).unwrap();
+    let normal_generator = Normal::new(0.0, SCALE_FACTOR / 5.0).unwrap();
 
     return cartesian
         .map(|(x, y)| {
@@ -50,30 +48,35 @@ fn create_positions() -> Vec<Vector3D> {
         .collect();
 }
 
-fn initialize_velocities(positions: &Vec<Vector3D>) -> Vec<Vector3D> {
+fn initialize_velocities(positions: &Vec<[f32; 3]>) -> Vec<[f32; 3]> {
     return positions
         .into_iter()
         .map(|pos| {
             // Gets initial acceleration of the point
-            let acceleration = get_acceleration(pos, positions, 0_f32);
+            let acceleration = get_acceleration(pos, positions, 0.0);
 
             // Calculates the speed of particle for circular motion
-            let position_magnitude = pos.iter().map(|e| e * e).sum::<f32>().sqrt();
-            let acceleration_magnitude = acceleration.iter().map(|e| e * e).sum::<f32>().sqrt();
-            let velocity_magnitude = (position_magnitude * acceleration_magnitude).sqrt();
+            let velocity_magnitude = {
+                let position_magnitude = magnitude(pos);
+                let acceleration_magnitude = magnitude(&acceleration);
+
+                (position_magnitude * acceleration_magnitude).sqrt()
+            };
 
             // Calculates unit vectors in 3D
-            let mut rng = thread_rng();
-            let normal_generator = Normal::new(0_f64, 0.1).unwrap();
+            let velocity_direction = {
+                let mut rng = thread_rng();
+                let normal_generator = Normal::new(0.0, 0.1).unwrap();
 
-            let velocity_direction = [
-                -acceleration[1],
-                acceleration[0],
-                normal_generator.sample(&mut rng) as f32,
-            ];
+                [
+                    -acceleration[1],
+                    acceleration[0],
+                    acceleration[2] * normal_generator.sample(&mut rng) as f32,
+                ]
+            };
 
             // Adds normalisation for correct speed (due to addition of z-component)
-            let normalisation: f32 = velocity_direction.iter().sum();
+            let normalisation = magnitude(&velocity_direction);
 
             // Generates velocities
             return [

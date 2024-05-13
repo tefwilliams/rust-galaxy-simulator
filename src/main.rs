@@ -1,14 +1,15 @@
 use csv::Writer;
 use std::time::Instant;
+
 mod accelerations;
 mod galaxy;
-
-const GALAXY_SIZE: usize = accelerations::GALAXY_SIZE;
+mod helpers;
 
 fn main() {
-    const N_STEPS: usize = 100;
+    const N_STEPS: usize = 1000;
+    const GALAXY_SIZE: u32 = 2_u32.pow(12);
 
-    let (mut positions, mut velocities) = galaxy::create_galaxy();
+    let (mut positions, mut velocities) = galaxy::create_galaxy(GALAXY_SIZE);
 
     let start = Instant::now();
     let points_record = (0..N_STEPS).map(|_| {
