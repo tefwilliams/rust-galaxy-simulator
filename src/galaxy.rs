@@ -1,5 +1,4 @@
-use crate::accelerations::get_acceleration;
-use crate::helpers::magnitude;
+use crate::{accelerations::get_acceleration, helpers::Vector3D};
 use rand::thread_rng;
 use rand_distr::{Distribution, Exp, Normal, Uniform};
 use std::f64::consts::PI;
@@ -57,8 +56,8 @@ fn initialize_velocities(positions: &Vec<[f32; 3]>) -> Vec<[f32; 3]> {
 
             // Calculates the speed of particle for circular motion
             let velocity_magnitude = {
-                let position_magnitude = magnitude(pos);
-                let acceleration_magnitude = magnitude(&acceleration);
+                let position_magnitude = pos.magnitude();
+                let acceleration_magnitude = acceleration.magnitude();
 
                 (position_magnitude * acceleration_magnitude).sqrt()
             };
@@ -75,15 +74,10 @@ fn initialize_velocities(positions: &Vec<[f32; 3]>) -> Vec<[f32; 3]> {
                 ]
             };
 
-            // Adds normalisation for correct speed (due to addition of z-component)
-            let normalisation = magnitude(&velocity_direction);
-
-            // Generates velocities
-            return [
-                velocity_magnitude * velocity_direction[0] / normalisation,
-                velocity_magnitude * velocity_direction[1] / normalisation,
-                velocity_magnitude * velocity_direction[2] / normalisation,
-            ];
+            // Generates velocities, correcting for magnitude
+            // change due to addition of z-component
+            let normalisation = velocity_direction.magnitude();
+            return velocity_direction.multiply_by(velocity_magnitude / normalisation);
         })
         .collect();
 }

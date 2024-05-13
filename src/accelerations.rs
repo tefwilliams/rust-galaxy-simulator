@@ -1,5 +1,7 @@
 use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 
+use crate::helpers::Vector3D;
+
 pub fn get_new_positions(
     positions: &Vec<[f32; 3]>,
     velocities: &Vec<[f32; 3]>,
@@ -41,17 +43,23 @@ pub fn get_acceleration(
                 return acc;
             }
 
-            let dx = other_pos[0] - position[0];
-            let dy = other_pos[1] - position[1];
-            let dz = other_pos[2] - position[2];
-
-            let dr_squared = dx * dx + dy * dy + dz * dz + softening_factor * softening_factor;
-            let dr_power_n32 = 1_f32 / (dr_squared.sqrt() * dr_squared);
-
-            return [
-                acc[0] + dx * dr_power_n32,
-                acc[1] + dy * dr_power_n32,
-                acc[2] + dz * dr_power_n32,
-            ];
+            return acc.add(&get_acceleration_from_other_position(
+                position,
+                other_pos,
+                softening_factor,
+            ));
         });
+}
+
+pub fn get_acceleration_from_other_position(
+    position: &[f32; 3],
+    other_position: &[f32; 3],
+    softening_factor: f32,
+) -> [f32; 3] {
+    let [dx, dy, dz] = other_position.subtract(position);
+
+    let dr_squared = dx * dx + dy * dy + dz * dz + softening_factor * softening_factor;
+    let dr_power_n32 = 1_f32 / (dr_squared.sqrt() * dr_squared);
+
+    return [dx, dy, dz].multiply_by(dr_power_n32);
 }
