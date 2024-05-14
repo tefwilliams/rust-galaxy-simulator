@@ -9,7 +9,7 @@ pub trait Vector3D {
 impl Vector3D for [f32; 3] {
     fn magnitude(&self) -> f32 {
         return self.iter().map(|e| e * e).sum::<f32>().sqrt();
-}
+    }
 
     fn add(&self, other: &[f32; 3]) -> [f32; 3] {
         return [self[0] + other[0], self[1] + other[1], self[2] + other[2]];
@@ -28,3 +28,13 @@ impl Vector3D for [f32; 3] {
     }
 }
 
+pub fn distance_between(vector1: &[f32; 3], vector2: &[f32; 3]) -> f32 {
+    return vector1.subtract(vector2).magnitude();
+}
+
+pub fn average(vectors: &Vec<[f32; 3]>) -> [f32; 3] {
+    return vectors
+        .into_iter()
+        .fold([0_f32, 0_f32, 0_f32], |acc, vec| acc.add(vec))
+        .divide_by(vectors.len() as f32);
+}

@@ -4,6 +4,7 @@ use std::time::Instant;
 mod accelerations;
 mod galaxy;
 mod helpers;
+mod octree;
 
 fn main() {
     const N_STEPS: usize = 1000;
@@ -13,11 +14,12 @@ fn main() {
 
     let start = Instant::now();
     let points_record = (0..N_STEPS).map(|_| {
-        (positions, velocities) = accelerations::get_new_positions(
+        (positions, velocities) = accelerations::get_new_positions_barnes_hut(
             &positions,
             &velocities,
+            10_f32.powi(-5),
             10_f32.powi(-4),
-            0_f32.powi(-4),
+            1.0,
         );
 
         return positions.to_vec();
