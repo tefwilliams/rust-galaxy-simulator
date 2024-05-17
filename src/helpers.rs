@@ -32,9 +32,14 @@ pub fn distance_between(vector1: &[f32; 3], vector2: &[f32; 3]) -> f32 {
     return vector1.subtract(vector2).magnitude();
 }
 
-pub fn average(vectors: &Vec<[f32; 3]>) -> [f32; 3] {
-    return vectors
-        .into_iter()
-        .fold([0_f32, 0_f32, 0_f32], |acc, vec| acc.add(vec))
-        .divide_by(vectors.len() as f32);
+pub trait Vector3DCollection {
+    fn sum_elements(&self) -> [f32; 3];
+}
+
+impl Vector3DCollection for Vec<[f32; 3]> {
+    fn sum_elements(&self) -> [f32; 3] {
+        return self
+            .into_iter()
+            .fold([0_f32, 0_f32, 0_f32], |acc, vec| acc.add(vec));
+    }
 }

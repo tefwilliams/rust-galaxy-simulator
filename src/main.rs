@@ -1,28 +1,30 @@
 use csv::Writer;
 use std::time::Instant;
 
+use crate::mass::MovingParticles;
+
 mod accelerations;
 mod galaxy;
 mod helpers;
+mod mass;
 mod octree;
 
 fn main() {
-    const N_STEPS: usize = 1000;
+    const N_STEPS: usize = 100;
     const GALAXY_SIZE: u32 = 2_u32.pow(12);
 
-    let (mut positions, mut velocities) = galaxy::create_galaxy(GALAXY_SIZE);
+    let mut particles = galaxy::create_galaxy(GALAXY_SIZE);
 
     let start = Instant::now();
     let points_record = (0..N_STEPS).map(|_| {
-        (positions, velocities) = accelerations::get_new_positions_barnes_hut(
-            &positions,
-            &velocities,
+        particles = accelerations::update_particles_barnes_hut(
+            &particles,
             10_f32.powi(-5),
             10_f32.powi(-4),
             1.0,
         );
 
-        return positions.to_vec();
+        return particles.get_positions();
     });
 
     let mut wtr = Writer::from_path("data/points_record.csv").unwrap();

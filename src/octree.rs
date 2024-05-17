@@ -1,14 +1,14 @@
 use itertools::{repeat_n, Itertools};
 
 use crate::{
-    accelerations::get_acceleration_due_to_object,
-    helpers::{average, distance_between, Vector3D},
+    accelerations::get_acceleration_due_to_mass,
+    helpers::{distance_between, Vector3D},
+    mass::{MassCollection, MassCollectionUnwrap, Particle},
 };
 
 pub struct OctreeNode {
     size: f32,
-    center_of_mass: [f32; 3],
-    mass: f32,
+    particle: Particle,
     number_of_items: u32,
     children: Vec<OctreeNode>,
 }
@@ -20,13 +20,13 @@ impl OctreeNode {
         softening_factor: f32,
         theta: f32,
     ) -> [f32; 3] {
-        if self.size / self.center_of_mass.subtract(position).magnitude() < theta
+        if self.size / self.particle.position.subtract(&position).magnitude() < theta
             || self.number_of_items == 1
         {
-            return get_acceleration_due_to_object(
+            return get_acceleration_due_to_mass(
                 // TODO - avoid self-interaction
-                position,
-                &(self.mass, self.center_of_mass),
+                &position,
+                &self.particle,
                 softening_factor,
             );
         }
@@ -37,25 +37,20 @@ impl OctreeNode {
     }
 }
 
-pub fn generate_node(size: f32, node_center: &[f32; 3], positions: &Vec<[f32; 3]>) -> OctreeNode {
+pub fn generate_node(size: f32, node_center: &[f32; 3], particles: &Vec<Particle>) -> OctreeNode {
     return OctreeNode {
         size,
-        center_of_mass: average(positions),
-        mass: positions.len() as f32,
-        number_of_items: positions.len() as u32,
-        children: if positions.len() > 1 {
-            generate_children(size, node_center, positions)
+        particle: particles.to_single_mass(),
+        number_of_items: particles.len() as u32,
+        children: if particles.len() > 1 {
+            generate_children(size, node_center, particles)
         } else {
             Vec::new()
         },
     };
 }
 
-fn generate_children(
-    size: f32,
-    node_center: &[f32; 3],
-    positions: &Vec<[f32; 3]>,
-) -> Vec<OctreeNode> {
+fn generate_children(size: f32, node_center: &[f32; 3], masses: &Vec<Particle>) -> Vec<OctreeNode> {
     let new_size = size / 2_f32;
 
     // Get all 8 child node centres
@@ -74,16 +69,16 @@ fn generate_children(
             .unwrap()
     };
 
-    return positions
+    return masses
         .into_iter()
-        .map(|pos| (get_node_index(pos), pos.clone()))
+        .map(|m| (get_node_index(&m.position), m))
         .into_group_map()
         .into_iter()
-        .filter_map(|(node_index, node_positions)| {
-            return (node_positions.len() > 0).then_some(generate_node(
+        .filter_map(|(node_index, node_masses)| {
+            return (node_masses.len() > 0).then_some(generate_node(
                 new_size,
                 &node_centers[node_index],
-                &node_positions,
+                &node_masses.reference_to_outer(),
             ));
         })
         .collect();
