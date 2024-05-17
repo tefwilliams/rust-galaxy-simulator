@@ -4,10 +4,10 @@ use crate::{
     mass::{MovingParticle, Particle},
 };
 use rand::thread_rng;
-use rand_distr::{Distribution, Exp, Normal, Poisson, Uniform};
+use rand_distr::{Distribution, Exp, LogNormal, Normal, Uniform};
 use std::f64::consts::PI;
 
-const SCALE_FACTOR: f64 = 1.0;
+const SCALE_FACTOR: f32 = 1.0;
 
 pub fn create_galaxy(galaxy_size: u32) -> Vec<MovingParticle> {
     // Sets positions for points
@@ -35,18 +35,18 @@ fn create_particles(galaxy_size: u32) -> Vec<Particle> {
         .map(|(r, p)| (r * p.cos(), r * p.sin()));
 
     let mut rng = thread_rng();
-    let mass_generator = Poisson::new(0.5).unwrap();
+    let mass_generator = LogNormal::new(0.0, 0.5).unwrap();
 
     // Adds 'noise' to all 3D to generate points
     let noise_generator = Normal::new(0.0, SCALE_FACTOR / 5.0).unwrap();
 
     return cartesian
         .map(|(x, y)| Particle {
-            mass: mass_generator.sample(&mut rng) as f32,
+            mass: mass_generator.sample(&mut rng),
             position: [
-                noise_generator.sample(&mut rng) as f32 + x,
-                noise_generator.sample(&mut rng) as f32 + y,
-                noise_generator.sample(&mut rng) as f32,
+                noise_generator.sample(&mut rng) + x,
+                noise_generator.sample(&mut rng) + y,
+                noise_generator.sample(&mut rng),
             ],
         })
         .collect();

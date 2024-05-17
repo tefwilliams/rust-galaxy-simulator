@@ -10,8 +10,8 @@ mod mass;
 mod octree;
 
 fn main() {
-    const N_STEPS: usize = 100;
-    const GALAXY_SIZE: u32 = 2_u32.pow(12);
+    const N_STEPS: usize = 10;
+    const GALAXY_SIZE: u32 = 2_u32.pow(16);
 
     let mut particles = galaxy::create_galaxy(GALAXY_SIZE);
 

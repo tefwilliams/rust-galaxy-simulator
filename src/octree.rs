@@ -50,7 +50,11 @@ pub fn generate_node(size: f32, node_center: &[f32; 3], particles: &Vec<Particle
     };
 }
 
-fn generate_children(size: f32, node_center: &[f32; 3], masses: &Vec<Particle>) -> Vec<OctreeNode> {
+fn generate_children(
+    size: f32,
+    node_center: &[f32; 3],
+    particles: &Vec<Particle>,
+) -> Vec<OctreeNode> {
     let new_size = size / 2_f32;
 
     // Get all 8 child node centres
@@ -69,7 +73,7 @@ fn generate_children(size: f32, node_center: &[f32; 3], masses: &Vec<Particle>) 
             .unwrap()
     };
 
-    return masses
+    return particles
         .into_iter()
         .map(|m| (get_node_index(&m.position), m))
         .into_group_map()

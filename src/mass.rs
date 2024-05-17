@@ -29,11 +29,11 @@ impl MovingParticles for Vec<MovingParticle> {
 // TODO - need better names
 // and probably new files
 pub trait MassCollection {
-    fn to_single_mass(self) -> Particle;
+    fn to_single_mass(&self) -> Particle;
 }
 
 impl MassCollection for &Vec<Particle> {
-    fn to_single_mass(self) -> Particle {
+    fn to_single_mass(&self) -> Particle {
         let total_mass = self.into_iter().map(|m| m.mass).sum();
 
         return Particle {
