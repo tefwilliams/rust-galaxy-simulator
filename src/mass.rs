@@ -1,4 +1,4 @@
-use crate::helpers::{Vector3D, Vector3DCollection};
+use crate::helpers::{distance_between, Vector3D, Vector3DCollection};
 
 #[derive(Clone)]
 pub struct Particle {
@@ -13,7 +13,7 @@ pub struct MovingParticle {
 
 pub trait MovingParticles {
     fn to_particles(&self) -> Vec<Particle>;
-    fn get_positions(&self) -> Vec<[f32; 3]>;
+    fn get_positions(&self) -> Vec<String>;
 }
 
 impl MovingParticles for Vec<MovingParticle> {
@@ -21,8 +21,12 @@ impl MovingParticles for Vec<MovingParticle> {
         return self.iter().map(|p| p.particle.clone()).collect();
     }
 
-    fn get_positions(&self) -> Vec<[f32; 3]> {
-        return self.iter().map(|p| p.particle.position).collect();
+    fn get_positions(&self) -> Vec<String> {
+        return self
+            .iter()
+            .map(|p| p.particle.position.to_string())
+            .flatten()
+            .collect();
     }
 }
 
@@ -41,7 +45,6 @@ impl MassCollection for &Vec<Particle> {
             position: self
                 .into_iter()
                 .map(|m| m.position.multiply_by(m.mass))
-                .collect::<Vec<_>>()
                 .sum_elements()
                 .divide_by(total_mass),
             mass: total_mass,
@@ -57,4 +60,24 @@ impl MassCollectionUnwrap for Vec<&Particle> {
     fn reference_to_outer(self) -> Vec<Particle> {
         return self.into_iter().map(|m| m.clone()).collect();
     }
+}
+
+pub fn get_total_energy(particles: &Vec<MovingParticle>) -> f32 {
+    let kinetic_energy: f32 = particles
+        .iter()
+        .map(|p| 0.5 * p.particle.mass * p.velocity.magnitude().powi(2))
+        .sum();
+
+    let potential_energy: f32 = particles
+        .iter()
+        .enumerate()
+        .flat_map(|(i, p1)| {
+            particles.iter().skip(i + 1).map(move |p2| {
+                -p1.particle.mass * p2.particle.mass
+                    / distance_between(&p1.particle.position, &p2.particle.position)
+            })
+        })
+        .sum();
+
+    return kinetic_energy + potential_energy;
 }

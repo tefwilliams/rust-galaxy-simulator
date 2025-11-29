@@ -1,7 +1,7 @@
 use itertools::{repeat_n, Itertools};
 
 use crate::{
-    accelerations::get_acceleration_due_to_mass,
+    accelerations::get_acceleration_due_to_particle,
     helpers::{distance_between, Vector3D},
     mass::{MassCollection, MassCollectionUnwrap, Particle},
 };
@@ -23,7 +23,7 @@ impl OctreeNode {
         if self.size / self.particle.position.subtract(&position).magnitude() < theta
             || self.number_of_items == 1
         {
-            return get_acceleration_due_to_mass(
+            return get_acceleration_due_to_particle(
                 // TODO - avoid self-interaction
                 &position,
                 &self.particle,

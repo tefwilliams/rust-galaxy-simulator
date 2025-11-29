@@ -77,7 +77,7 @@ pub fn get_acceleration(
                 return acc;
             }
 
-            return acc.add(&get_acceleration_due_to_mass(
+            return acc.add(&get_acceleration_due_to_particle(
                 position,
                 mass,
                 softening_factor,
@@ -85,15 +85,15 @@ pub fn get_acceleration(
         });
 }
 
-pub fn get_acceleration_due_to_mass(
+pub fn get_acceleration_due_to_particle(
     position: &[f32; 3],
-    mass: &Particle,
+    particle: &Particle,
     softening_factor: f32,
 ) -> [f32; 3] {
-    let [dx, dy, dz] = mass.position.subtract(position);
+    let distance = particle.position.subtract(position);
 
-    let dr_squared = dx * dx + dy * dy + dz * dz + softening_factor * softening_factor;
-    let dr_power_n32 = 1_f32 / (dr_squared.sqrt() * dr_squared);
+    let dr_squared = distance.magnitude().powi(2) + softening_factor.powi(2);
+    let dr_power_n32 = dr_squared.sqrt() * dr_squared;
 
-    return [dx, dy, dz].multiply_by(mass.mass / dr_power_n32);
+    return distance.multiply_by(particle.mass / dr_power_n32);
 }
