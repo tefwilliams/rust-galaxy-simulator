@@ -10,7 +10,7 @@ mod mass;
 mod octree;
 
 fn main() {
-    const GALAXY_SIZE: u32 = 2_u32.pow(14);
+    const GALAXY_SIZE: u32 = 2_u32.pow(10);
     const N_RECORDS: usize = 100;
     const STEPS_PER_RECORD: usize = 10;
     const N_STEPS: usize = N_RECORDS * STEPS_PER_RECORD;

@@ -1,6 +1,6 @@
 use crate::helpers::{distance_between, Vector3D, Vector3DCollection};
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Particle {
     pub mass: f32,
     pub position: [f32; 3],
@@ -18,7 +18,7 @@ pub trait MovingParticles {
 
 impl MovingParticles for &[MovingParticle] {
     fn to_particles(&self) -> Vec<&Particle> {
-        return self.iter().map(|p| &p.particle).collect();
+        self.iter().map(|p| &p.particle).collect()
     }
 
     fn get_positions(&self) -> Vec<String> {
@@ -27,6 +27,12 @@ impl MovingParticles for &[MovingParticle] {
             .map(|p| p.particle.position.to_string())
             .flatten()
             .collect();
+    }
+}
+
+impl AsRef<Particle> for MovingParticle {
+    fn as_ref(&self) -> &Particle {
+        &self.particle
     }
 }
 
@@ -64,7 +70,7 @@ pub fn get_total_energy(particles: &[MovingParticle]) -> f32 {
         .flat_map(|(i, p1)| {
             particles.iter().skip(i + 1).map(move |p2| {
                 -p1.particle.mass * p2.particle.mass
-                    / distance_between(&p1.particle.position, &p2.particle.position)
+                    / distance_between(p1.particle.position, p2.particle.position)
             })
         })
         .sum();

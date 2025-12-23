@@ -16,29 +16,29 @@ pub struct OctreeNode {
 impl OctreeNode {
     pub fn get_acceleration(
         &self,
-        position: &[f32; 3],
+        position: [f32; 3],
         softening_factor: f32,
         theta: f32,
     ) -> [f32; 3] {
-        if self.size / self.particle.position.subtract(&position).magnitude() < theta
+        if self.size / self.particle.position.subtract(position).magnitude() < theta
             || self.number_of_items == 1
         {
             return get_acceleration_due_to_particle(
                 // TODO - avoid self-interaction
-                &position,
-                &self.particle,
+                position,
+                self.particle,
                 softening_factor,
             );
         }
 
         return self.children.iter().fold([0.0, 0.0, 0.0], |acc, child| {
-            return acc.add(&child.get_acceleration(&position, softening_factor, theta));
+            return acc.add(child.get_acceleration(position, softening_factor, theta));
         });
     }
 }
 
 pub fn generate_node(size: f32, node_center: &[f32; 3], particles: &[&Particle]) -> OctreeNode {
-    return OctreeNode {
+    OctreeNode {
         size,
         particle: particles.to_single_mass(),
         number_of_items: particles.len() as u32,
@@ -47,7 +47,7 @@ pub fn generate_node(size: f32, node_center: &[f32; 3], particles: &[&Particle])
         } else {
             Vec::new()
         },
-    };
+    }
 }
 
 fn generate_children(
@@ -60,22 +60,22 @@ fn generate_children(
     // Get all 8 child node centres
     let node_centers = repeat_n([-new_size, new_size], 3)
         .multi_cartesian_product()
-        .map(|vec| node_center.add(&vec.try_into().unwrap()))
+        .map(|vec| node_center.add(vec.try_into().unwrap()))
         .collect::<Vec<[f32; 3]>>();
 
     // Get index of node that pos is closest to
-    let get_node_index = |pos: &[f32; 3]| {
+    let get_node_index = |pos: [f32; 3]| {
         (0_usize..8_usize)
             .min_by(|i, j| {
-                distance_between(&pos, &node_centers[*i])
-                    .total_cmp(&distance_between(&pos, &node_centers[*j]))
+                distance_between(pos, node_centers[*i])
+                    .total_cmp(&distance_between(pos, node_centers[*j]))
             })
             .unwrap()
     };
 
     return particles
         .iter()
-        .map(|&m| (get_node_index(&m.position), m))
+        .map(|&m| (get_node_index(m.position), m))
         .into_group_map()
         .iter()
         .filter_map(|(node_index, node_masses)| {
@@ -85,7 +85,7 @@ fn generate_children(
                 Some(generate_node(
                     new_size,
                     &node_centers[*node_index],
-                    node_masses,
+                    node_masses.as_slice(),
                 ))
             }
         })

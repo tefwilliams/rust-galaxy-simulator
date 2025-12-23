@@ -2,7 +2,7 @@ use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterato
 
 use crate::{
     helpers::Vector3D,
-    mass::{MovingParticle, MovingParticles, Particle},
+    mass::{MovingParticle, Particle},
     octree::generate_node,
 };
 
@@ -15,15 +15,15 @@ pub fn get_new_positions(
         .into_par_iter()
         .map(|particle| {
             let acceleration = get_acceleration(
-                &particle.particle.position,
-                particles.to_particles().as_slice(),
+                particle.particle.position,
+                particles.iter().map(|p| p.particle),
                 softening_factor,
             );
 
-            let new_vel = acceleration.multiply_by(time_step).add(&particle.velocity);
+            let new_vel = acceleration.multiply_by(time_step).add(particle.velocity);
             let new_pos = new_vel
                 .multiply_by(time_step)
-                .add(&particle.particle.position);
+                .add(particle.particle.position);
 
             return (new_pos, new_vel);
         })
@@ -42,16 +42,24 @@ pub fn update_particles_barnes_hut(
         .max_by(|pos1, pos2| pos1.total_cmp(pos2))
         .unwrap();
 
-    let octree = generate_node(size, &[0.0, 0.0, 0.0], particles.to_particles().as_slice());
+    let octree = generate_node(
+        size,
+        &[0.0, 0.0, 0.0],
+        particles
+            .iter()
+            .map(|p| &p.particle)
+            .collect::<Vec<&Particle>>()
+            .as_slice(),
+    );
 
     return particles
         .par_iter()
         .map(|p| {
             let acceleration =
-                octree.get_acceleration(&p.particle.position, softening_factor, theta);
+                octree.get_acceleration(p.particle.position, softening_factor, theta);
 
-            let new_vel = acceleration.multiply_by(time_step).add(&p.velocity);
-            let new_pos = new_vel.multiply_by(time_step).add(&p.particle.position);
+            let new_vel = acceleration.multiply_by(time_step).add(p.velocity);
+            let new_pos = new_vel.multiply_by(time_step).add(p.particle.position);
 
             return MovingParticle {
                 particle: Particle {
@@ -64,30 +72,27 @@ pub fn update_particles_barnes_hut(
         .collect();
 }
 
-pub fn get_acceleration(
-    position: &[f32; 3],
-    particles: &[&Particle],
-    softening_factor: f32,
-) -> [f32; 3] {
-    return particles
-        .into_iter()
-        .fold([0_f32, 0_f32, 0_f32], |acc, mass| {
-            // TODO - will this work?
-            if mass.position == *position {
-                return acc;
-            }
+pub fn get_acceleration<I>(position: [f32; 3], particles: I, softening_factor: f32) -> [f32; 3]
+where
+    I: Iterator<Item = Particle>,
+{
+    return particles.fold([0_f32, 0_f32, 0_f32], |acc, mass| {
+        // TODO - will this work?
+        if mass.position == position {
+            return acc;
+        }
 
-            return acc.add(&get_acceleration_due_to_particle(
-                position,
-                mass,
-                softening_factor,
-            ));
-        });
+        return acc.add(get_acceleration_due_to_particle(
+            position,
+            mass,
+            softening_factor,
+        ));
+    });
 }
 
 pub fn get_acceleration_due_to_particle(
-    position: &[f32; 3],
-    particle: &Particle,
+    position: [f32; 3],
+    particle: Particle,
     softening_factor: f32,
 ) -> [f32; 3] {
     let distance = particle.position.subtract(position);
