@@ -23,20 +23,15 @@ fn main() {
     let start = Instant::now();
     let points_record = (0..N_RECORDS).map(|step| {
         for _ in 0..STEPS_PER_RECORD {
-            particles = accelerations::update_particles_barnes_hut(
-                &particles,
-                10_f32.powi(-7),
-                10_f32.powi(-4),
-                1.0,
-            );
+            particles = accelerations::update_particles_barnes_hut(&particles, 1e-6, 1e-4, 2.0);
         }
 
-        let energy = mass::get_total_energy(&particles);
-        energy_record[step] = energy;
+        // let energy = mass::get_total_energy(&particles);
+        // energy_record[step] = energy;
         println!("Completed step {} of {}", (step + 1), N_RECORDS);
-        println!("Total energy: {}", energy);
+        // println!("Total energy: {}", energy);
 
-        return particles.get_positions();
+        return particles.as_slice().get_positions();
     });
 
     let mut wtr = Writer::from_path("data/points_record.csv").unwrap();

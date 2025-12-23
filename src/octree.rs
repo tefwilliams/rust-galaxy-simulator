@@ -3,7 +3,7 @@ use itertools::{repeat_n, Itertools};
 use crate::{
     accelerations::get_acceleration_due_to_particle,
     helpers::{distance_between, Vector3D},
-    mass::{MassCollection, MassCollectionUnwrap, Particle},
+    mass::{MassCollection, Particle},
 };
 
 pub struct OctreeNode {
@@ -32,12 +32,12 @@ impl OctreeNode {
         }
 
         return self.children.iter().fold([0.0, 0.0, 0.0], |acc, child| {
-            return acc.add(&child.get_acceleration(position, softening_factor, theta));
+            return acc.add(&child.get_acceleration(&position, softening_factor, theta));
         });
     }
 }
 
-pub fn generate_node(size: f32, node_center: &[f32; 3], particles: &Vec<Particle>) -> OctreeNode {
+pub fn generate_node(size: f32, node_center: &[f32; 3], particles: &[&Particle]) -> OctreeNode {
     return OctreeNode {
         size,
         particle: particles.to_single_mass(),
@@ -53,7 +53,7 @@ pub fn generate_node(size: f32, node_center: &[f32; 3], particles: &Vec<Particle
 fn generate_children(
     size: f32,
     node_center: &[f32; 3],
-    particles: &Vec<Particle>,
+    particles: &[&Particle],
 ) -> Vec<OctreeNode> {
     let new_size = size / 2_f32;
 
@@ -74,16 +74,20 @@ fn generate_children(
     };
 
     return particles
-        .into_iter()
-        .map(|m| (get_node_index(&m.position), m))
+        .iter()
+        .map(|&m| (get_node_index(&m.position), m))
         .into_group_map()
-        .into_iter()
+        .iter()
         .filter_map(|(node_index, node_masses)| {
-            return (node_masses.len() > 0).then_some(generate_node(
-                new_size,
-                &node_centers[node_index],
-                &node_masses.reference_to_outer(),
-            ));
+            if node_masses.is_empty() {
+                None
+            } else {
+                Some(generate_node(
+                    new_size,
+                    &node_centers[*node_index],
+                    node_masses,
+                ))
+            }
         })
         .collect();
 }

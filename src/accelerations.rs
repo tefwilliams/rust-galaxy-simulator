@@ -1,4 +1,4 @@
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
     helpers::Vector3D,
@@ -7,16 +7,16 @@ use crate::{
 };
 
 pub fn get_new_positions(
-    particles: &Vec<MovingParticle>,
+    particles: &[MovingParticle],
     time_step: f32,
     softening_factor: f32,
 ) -> (Vec<[f32; 3]>, Vec<[f32; 3]>) {
-    return particles
+    particles
         .into_par_iter()
         .map(|particle| {
             let acceleration = get_acceleration(
                 &particle.particle.position,
-                &particles.to_particles(),
+                particles.to_particles().as_slice(),
                 softening_factor,
             );
 
@@ -27,11 +27,11 @@ pub fn get_new_positions(
 
             return (new_pos, new_vel);
         })
-        .unzip();
+        .unzip()
 }
 
 pub fn update_particles_barnes_hut(
-    particles: &Vec<MovingParticle>,
+    particles: &[MovingParticle],
     time_step: f32,
     softening_factor: f32,
     theta: f32,
@@ -42,10 +42,10 @@ pub fn update_particles_barnes_hut(
         .max_by(|pos1, pos2| pos1.total_cmp(pos2))
         .unwrap();
 
-    let octree = generate_node(size, &[0.0, 0.0, 0.0], &particles.to_particles());
+    let octree = generate_node(size, &[0.0, 0.0, 0.0], particles.to_particles().as_slice());
 
     return particles
-        .into_par_iter()
+        .par_iter()
         .map(|p| {
             let acceleration =
                 octree.get_acceleration(&p.particle.position, softening_factor, theta);
@@ -66,7 +66,7 @@ pub fn update_particles_barnes_hut(
 
 pub fn get_acceleration(
     position: &[f32; 3],
-    particles: &Vec<Particle>,
+    particles: &[&Particle],
     softening_factor: f32,
 ) -> [f32; 3] {
     return particles

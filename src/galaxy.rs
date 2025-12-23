@@ -14,7 +14,7 @@ pub fn create_galaxy(galaxy_size: u32) -> Vec<MovingParticle> {
     let particles = create_particles(galaxy_size);
 
     // Finds the initial velocity of each point
-    return initialize_velocities(&particles);
+    return initialize_velocities(particles.iter().collect::<Vec<&Particle>>().as_slice());
 }
 
 fn create_particles(galaxy_size: u32) -> Vec<Particle> {
@@ -52,10 +52,10 @@ fn create_particles(galaxy_size: u32) -> Vec<Particle> {
         .collect();
 }
 
-fn initialize_velocities(particles: &Vec<Particle>) -> Vec<MovingParticle> {
+fn initialize_velocities(particles: &[&Particle]) -> Vec<MovingParticle> {
     return particles
         .into_iter()
-        .map(|particle| {
+        .map(|&particle| {
             // Gets initial acceleration of the point
             let acceleration = get_acceleration(&particle.position, particles, 0.0);
 

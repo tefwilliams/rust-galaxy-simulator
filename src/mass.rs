@@ -12,13 +12,13 @@ pub struct MovingParticle {
 }
 
 pub trait MovingParticles {
-    fn to_particles(&self) -> Vec<Particle>;
+    fn to_particles(&self) -> Vec<&Particle>;
     fn get_positions(&self) -> Vec<String>;
 }
 
-impl MovingParticles for Vec<MovingParticle> {
-    fn to_particles(&self) -> Vec<Particle> {
-        return self.iter().map(|p| p.particle.clone()).collect();
+impl MovingParticles for &[MovingParticle] {
+    fn to_particles(&self) -> Vec<&Particle> {
+        return self.iter().map(|p| &p.particle).collect();
     }
 
     fn get_positions(&self) -> Vec<String> {
@@ -36,11 +36,11 @@ pub trait MassCollection {
     fn to_single_mass(&self) -> Particle;
 }
 
-impl MassCollection for &Vec<Particle> {
+impl MassCollection for &[&Particle] {
     fn to_single_mass(&self) -> Particle {
         let total_mass = self.into_iter().map(|m| m.mass).sum();
 
-        return Particle {
+        Particle {
             // Average of positions weighted by mass
             position: self
                 .into_iter()
@@ -48,21 +48,11 @@ impl MassCollection for &Vec<Particle> {
                 .sum_elements()
                 .divide_by(total_mass),
             mass: total_mass,
-        };
+        }
     }
 }
 
-pub trait MassCollectionUnwrap {
-    fn reference_to_outer(self) -> Vec<Particle>;
-}
-
-impl MassCollectionUnwrap for Vec<&Particle> {
-    fn reference_to_outer(self) -> Vec<Particle> {
-        return self.into_iter().map(|m| m.clone()).collect();
-    }
-}
-
-pub fn get_total_energy(particles: &Vec<MovingParticle>) -> f32 {
+pub fn get_total_energy(particles: &[MovingParticle]) -> f32 {
     let kinetic_energy: f32 = particles
         .iter()
         .map(|p| 0.5 * p.particle.mass * p.velocity.self_dot())
@@ -79,5 +69,5 @@ pub fn get_total_energy(particles: &Vec<MovingParticle>) -> f32 {
         })
         .sum();
 
-    return kinetic_energy + potential_energy;
+    kinetic_energy + potential_energy
 }
