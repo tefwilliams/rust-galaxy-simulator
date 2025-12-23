@@ -1,4 +1,5 @@
 pub trait Vector3D {
+    fn self_dot(&self) -> f32;
     fn magnitude(&self) -> f32;
     fn add(&self, other: &Self) -> Self;
     fn subtract(&self, other: &Self) -> Self;
@@ -8,8 +9,12 @@ pub trait Vector3D {
 }
 
 impl Vector3D for [f32; 3] {
+    fn self_dot(&self) -> f32 {
+        self.iter().map(|e| e * e).sum::<f32>()
+    }
+
     fn magnitude(&self) -> f32 {
-        self.iter().map(|e| e * e).sum::<f32>().sqrt()
+        self.self_dot().sqrt()
     }
 
     fn add(&self, other: &[f32; 3]) -> [f32; 3] {

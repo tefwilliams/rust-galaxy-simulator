@@ -92,7 +92,7 @@ pub fn get_acceleration_due_to_particle(
 ) -> [f32; 3] {
     let distance = particle.position.subtract(position);
 
-    let dr_squared = distance.magnitude().powi(2) + softening_factor.powi(2);
+    let dr_squared = distance.self_dot() + softening_factor.powi(2);
     let dr_power_n32 = dr_squared.sqrt() * dr_squared;
 
     return distance.multiply_by(particle.mass / dr_power_n32);

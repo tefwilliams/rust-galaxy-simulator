@@ -65,7 +65,7 @@ impl MassCollectionUnwrap for Vec<&Particle> {
 pub fn get_total_energy(particles: &Vec<MovingParticle>) -> f32 {
     let kinetic_energy: f32 = particles
         .iter()
-        .map(|p| 0.5 * p.particle.mass * p.velocity.magnitude().powi(2))
+        .map(|p| 0.5 * p.particle.mass * p.velocity.self_dot())
         .sum();
 
     let potential_energy: f32 = particles

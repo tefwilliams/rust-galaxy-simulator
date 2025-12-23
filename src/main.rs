@@ -17,16 +17,24 @@ fn main() {
 
     let mut particles = galaxy::create_galaxy(GALAXY_SIZE);
 
+    let mut energy_record: [f32; N_RECORDS] = [0.0; N_RECORDS];
+    println!("Initial energy: {}", mass::get_total_energy(&particles));
+
     let start = Instant::now();
-    let points_record = (0..N_RECORDS).map(|_| {
+    let points_record = (0..N_RECORDS).map(|step| {
         for _ in 0..STEPS_PER_RECORD {
             particles = accelerations::update_particles_barnes_hut(
                 &particles,
-                10_f32.powi(-6),
-                10_f32.powi(-5),
+                10_f32.powi(-7),
+                10_f32.powi(-4),
                 1.0,
             );
         }
+
+        let energy = mass::get_total_energy(&particles);
+        energy_record[step] = energy;
+        println!("Completed step {} of {}", (step + 1), N_RECORDS);
+        println!("Total energy: {}", energy);
 
         return particles.get_positions();
     });
@@ -36,19 +44,6 @@ fn main() {
     for record in points_record {
         wtr.serialize(record).ok();
     }
-
-    let energy_record = (0..N_RECORDS).map(|_| {
-        for _ in 0..STEPS_PER_RECORD {
-            particles = accelerations::update_particles_barnes_hut(
-                &particles,
-                10_f32.powi(-8),
-                10_f32.powi(-5),
-                1.0,
-            );
-        }
-
-        return mass::get_total_energy(&particles);
-    });
 
     let mut egy_wtr = Writer::from_path("data/energy_record.csv").unwrap();
 
