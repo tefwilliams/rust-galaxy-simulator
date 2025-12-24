@@ -1,4 +1,4 @@
-use crate::helpers::{distance_between, Vector3D, Vector3DCollection};
+use crate::helpers::{distance_between, Vector3D};
 
 #[derive(Copy, Clone)]
 pub struct Particle {
@@ -39,20 +39,20 @@ impl AsRef<Particle> for MovingParticle {
 // TODO - need better names
 // and probably new files
 pub trait MassCollection {
-    fn to_single_mass(&self) -> Particle;
+    fn to_single_mass(self) -> Particle;
 }
 
 impl MassCollection for &[&Particle] {
-    fn to_single_mass(&self) -> Particle {
-        let total_mass = self.into_iter().map(|m| m.mass).sum();
+    fn to_single_mass(self) -> Particle {
+        let total_mass = self.iter().map(|m| m.mass).sum();
+
+        let weighted_positions = self.iter().fold([0.0, 0.0, 0.0], |acc, p| {
+            acc.add(p.position.multiply_by(p.mass))
+        });
 
         Particle {
             // Average of positions weighted by mass
-            position: self
-                .into_iter()
-                .map(|m| m.position.multiply_by(m.mass))
-                .sum_elements()
-                .divide_by(total_mass),
+            position: weighted_positions.divide_by(total_mass),
             mass: total_mass,
         }
     }

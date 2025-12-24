@@ -56,7 +56,7 @@ pub fn update_particles_barnes_hut(
             .as_slice(),
     );
 
-    return particles
+    particles
         .par_iter()
         .map(|p| {
             let acceleration =
@@ -65,15 +65,15 @@ pub fn update_particles_barnes_hut(
             let new_vel = acceleration.multiply_by(time_step).add(p.velocity);
             let new_pos = new_vel.multiply_by(time_step).add(p.particle.position);
 
-            return MovingParticle {
+            MovingParticle {
                 particle: Particle {
                     position: new_pos,
                     ..p.particle
                 },
                 velocity: new_vel,
-            };
+            }
         })
-        .collect();
+        .collect()
 }
 
 pub fn get_acceleration(

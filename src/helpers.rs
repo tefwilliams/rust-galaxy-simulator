@@ -41,18 +41,5 @@ impl Vector3D for [f32; 3] {
 }
 
 pub fn distance_between(vector1: [f32; 3], vector2: [f32; 3]) -> f32 {
-    return vector1.subtract(vector2).magnitude();
-}
-
-pub trait Vector3DCollection {
-    fn sum_elements(self) -> [f32; 3];
-}
-
-impl<I> Vector3DCollection for I
-where
-    I: Iterator<Item = [f32; 3]>,
-{
-    fn sum_elements(self) -> [f32; 3] {
-        self.fold([0.0, 0.0, 0.0], |acc, vec| acc.add(vec))
-    }
+    vector1.subtract(vector2).magnitude()
 }
