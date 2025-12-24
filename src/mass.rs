@@ -12,27 +12,15 @@ pub struct MovingParticle {
 }
 
 pub trait MovingParticles {
-    fn to_particles(&self) -> Vec<&Particle>;
     fn get_positions(&self) -> Vec<String>;
 }
 
 impl MovingParticles for &[MovingParticle] {
-    fn to_particles(&self) -> Vec<&Particle> {
-        self.iter().map(|p| &p.particle).collect()
-    }
-
     fn get_positions(&self) -> Vec<String> {
-        return self
-            .iter()
+        self.iter()
             .map(|p| p.particle.position.to_string())
             .flatten()
-            .collect();
-    }
-}
-
-impl AsRef<Particle> for MovingParticle {
-    fn as_ref(&self) -> &Particle {
-        &self.particle
+            .collect()
     }
 }
 

@@ -29,7 +29,7 @@ fn main() {
         // let energy = mass::get_total_energy(&particles);
         // println!("Total energy: {}", energy);
 
-        return particles.as_slice().get_positions();
+        particles.as_slice().get_positions()
     });
 
     let mut wtr = Writer::from_path("data/points_record.csv").unwrap();

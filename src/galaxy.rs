@@ -14,7 +14,7 @@ pub fn create_galaxy(galaxy_size: u32) -> Vec<MovingParticle> {
     let particles = create_particles(galaxy_size);
 
     // Finds the initial velocity of each point
-    return initialize_velocities(&particles);
+    initialize_velocities(&particles)
 }
 
 fn create_particles(galaxy_size: u32) -> Vec<Particle> {
@@ -40,7 +40,7 @@ fn create_particles(galaxy_size: u32) -> Vec<Particle> {
     // Adds 'noise' to all 3D to generate points
     let noise_generator = Normal::new(0.0, SCALE_FACTOR / 5.0).unwrap();
 
-    return cartesian
+    cartesian
         .map(|(x, y)| Particle {
             mass: mass_generator.sample(&mut rng),
             position: [
@@ -49,7 +49,7 @@ fn create_particles(galaxy_size: u32) -> Vec<Particle> {
                 noise_generator.sample(&mut rng),
             ],
         })
-        .collect();
+        .collect()
 }
 
 fn initialize_velocities(particles: &[Particle]) -> Vec<MovingParticle> {
@@ -73,10 +73,10 @@ fn initialize_velocities(particles: &[Particle]) -> Vec<MovingParticle> {
             // Generates velocities, correcting for magnitude
             // change due to addition of z-component
             let normalisation = velocity_direction.magnitude();
-            return MovingParticle {
+            MovingParticle {
                 particle,
                 velocity: velocity_direction.multiply_by(velocity_magnitude / normalisation),
-            };
+            }
         })
         .collect()
 }
