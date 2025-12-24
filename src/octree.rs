@@ -32,7 +32,7 @@ impl OctreeNode {
     }
 }
 
-pub fn generate_node(size: f32, node_center: &[f32; 3], particles: &[&Particle]) -> OctreeNode {
+pub fn generate_node(size: f32, node_center: &[f32; 3], particles: &[Particle]) -> OctreeNode {
     OctreeNode {
         size,
         particle: particles.to_single_mass(),
@@ -45,11 +45,7 @@ pub fn generate_node(size: f32, node_center: &[f32; 3], particles: &[&Particle])
     }
 }
 
-fn generate_children(
-    size: f32,
-    node_center: &[f32; 3],
-    particles: &[&Particle],
-) -> Vec<OctreeNode> {
+fn generate_children(size: f32, node_center: &[f32; 3], particles: &[Particle]) -> Vec<OctreeNode> {
     let new_size = size / 2_f32;
 
     // Get all 8 child node centres
@@ -68,21 +64,21 @@ fn generate_children(
             .unwrap()
     };
 
-    return particles
+    particles
         .iter()
         .map(|&m| (get_node_index(m.position), m))
         .into_group_map()
         .iter()
-        .filter_map(|(node_index, node_masses)| {
+        .filter_map(|(&node_index, node_masses)| {
             if node_masses.is_empty() {
                 None
             } else {
                 Some(generate_node(
                     new_size,
-                    &node_centers[*node_index],
+                    &node_centers[node_index],
                     node_masses.as_slice(),
                 ))
             }
         })
-        .collect();
+        .collect()
 }

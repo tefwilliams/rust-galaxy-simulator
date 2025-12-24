@@ -51,8 +51,8 @@ pub fn update_particles_barnes_hut(
         &[0.0, 0.0, 0.0],
         particles
             .iter()
-            .map(|p| &p.particle)
-            .collect::<Vec<&Particle>>()
+            .map(|p| p.particle)
+            .collect::<Vec<Particle>>()
             .as_slice(),
     );
 

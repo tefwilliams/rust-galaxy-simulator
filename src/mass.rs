@@ -30,7 +30,7 @@ pub trait MassCollection {
     fn to_single_mass(self) -> Particle;
 }
 
-impl MassCollection for &[&Particle] {
+impl MassCollection for &[Particle] {
     fn to_single_mass(self) -> Particle {
         let total_mass = self.iter().map(|m| m.mass).sum();
 
