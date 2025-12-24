@@ -23,17 +23,12 @@ impl OctreeNode {
         if self.size / self.particle.position.subtract(position).magnitude() < theta
             || self.number_of_items == 1
         {
-            return get_acceleration_due_to_particle(
-                // TODO - avoid self-interaction
-                position,
-                self.particle,
-                softening_factor,
-            );
+            return get_acceleration_due_to_particle(position, &self.particle, softening_factor);
         }
 
-        return self.children.iter().fold([0.0, 0.0, 0.0], |acc, child| {
-            return acc.add(child.get_acceleration(position, softening_factor, theta));
-        });
+        self.children.iter().fold([0.0, 0.0, 0.0], |acc, child| {
+            acc.add(child.get_acceleration(position, softening_factor, theta))
+        })
     }
 }
 

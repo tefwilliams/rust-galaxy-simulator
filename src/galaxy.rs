@@ -53,40 +53,30 @@ fn create_particles(galaxy_size: u32) -> Vec<Particle> {
 }
 
 fn initialize_velocities(particles: &[Particle]) -> Vec<MovingParticle> {
-    return particles
+    particles
         .into_iter()
         .map(|&particle| {
             // Gets initial acceleration of the point
-            let acceleration =
-                get_acceleration(particle.position, particles.iter().map(|p| *p), 0.0);
+            let acceleration = get_acceleration(particle.position, particles, 1e-2);
 
             // Calculates the speed of particle for circular motion
             let velocity_magnitude = {
                 let position_magnitude = particle.position.magnitude();
                 let acceleration_magnitude = acceleration.magnitude();
 
-                (position_magnitude * acceleration_magnitude).sqrt()
+                (position_magnitude * acceleration_magnitude / particle.mass).sqrt()
             };
 
             // Calculates unit vectors in 3D
-            let velocity_direction = {
-                let mut rng = thread_rng();
-                let noise_generator = Normal::new(0.0, 0.1).unwrap();
-
-                [
-                    -acceleration[1],
-                    acceleration[0],
-                    acceleration[2] * noise_generator.sample(&mut rng) as f32,
-                ]
-            };
+            let velocity_direction = { [-acceleration[1], acceleration[0], acceleration[2]] };
 
             // Generates velocities, correcting for magnitude
             // change due to addition of z-component
             let normalisation = velocity_direction.magnitude();
             return MovingParticle {
-                particle: particle.clone(),
+                particle,
                 velocity: velocity_direction.multiply_by(velocity_magnitude / normalisation),
             };
         })
-        .collect();
+        .collect()
 }

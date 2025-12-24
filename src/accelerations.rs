@@ -16,7 +16,11 @@ pub fn get_new_positions(
         .map(|particle| {
             let acceleration = get_acceleration(
                 particle.particle.position,
-                particles.iter().map(|p| p.particle),
+                particles
+                    .iter()
+                    .map(|p| p.particle)
+                    .collect::<Vec<Particle>>()
+                    .as_slice(),
                 softening_factor,
             );
 
@@ -72,29 +76,30 @@ pub fn update_particles_barnes_hut(
         .collect();
 }
 
-pub fn get_acceleration<I>(position: [f32; 3], particles: I, softening_factor: f32) -> [f32; 3]
-where
-    I: Iterator<Item = Particle>,
-{
-    return particles.fold([0_f32, 0_f32, 0_f32], |acc, mass| {
-        // TODO - will this work?
-        if mass.position == position {
-            return acc;
-        }
-
-        return acc.add(get_acceleration_due_to_particle(
+pub fn get_acceleration(
+    position: [f32; 3],
+    particles: &[Particle],
+    softening_factor: f32,
+) -> [f32; 3] {
+    particles.iter().fold([0_f32, 0_f32, 0_f32], |acc, mass| {
+        acc.add(get_acceleration_due_to_particle(
             position,
             mass,
             softening_factor,
-        ));
-    });
+        ))
+    })
 }
 
 pub fn get_acceleration_due_to_particle(
     position: [f32; 3],
-    particle: Particle,
+    particle: &Particle,
     softening_factor: f32,
 ) -> [f32; 3] {
+    // TODO - will this work?
+    if particle.position == position {
+        return [0.0, 0.0, 0.0];
+    }
+
     let distance = particle.position.subtract(position);
 
     let dr_squared = distance.self_dot() + softening_factor.powi(2);
