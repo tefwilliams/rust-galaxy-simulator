@@ -3,7 +3,8 @@ use rayon::iter::{IntoParallelIterator, IntoParallelRefMutIterator, ParallelIter
 use crate::{
     helpers::Vector3D,
     mass::{MovingParticle, Particle},
-    octree::generate_node,
+    octree::Octree,
+    // octree::generate_node,
 };
 
 pub fn get_new_positions(
@@ -46,18 +47,34 @@ pub fn update_particles_barnes_hut(
         .max_by(|pos1, pos2| pos1.total_cmp(pos2))
         .unwrap();
 
-    let octree = generate_node(
-        size,
-        &[0.0, 0.0, 0.0],
+    let octree = Octree::build(
         particles
             .iter()
             .map(|p| p.particle)
             .collect::<Vec<Particle>>()
             .as_slice(),
+        [0.0, 0.0, 0.0],
+        size,
     );
 
+    // for node in octree.nodes.iter() {
+    //     println!(
+    //         "Node size: {}, first_child_index: {}, particle mass: {}",
+    //         node.size, node.first_child_index, node.particle.mass
+    //     );
+    // }
+    //  generate_node(
+    //     size,
+    //     &[0.0, 0.0, 0.0],
+    //     particles
+    //         .iter()
+    //         .map(|p| p.particle)
+    //         .collect::<Vec<Particle>>()
+    //         .as_slice(),
+    // );
+
     particles.par_iter_mut().for_each(|p| {
-        let acceleration = octree.get_acceleration(p.particle.position, softening_factor, theta);
+        let acceleration = octree.get_acceleration(0, p.particle.position, softening_factor, theta);
 
         // Update velocity and position directly
         p.velocity = acceleration.multiply_by(time_step).add(p.velocity);
