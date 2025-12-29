@@ -11,7 +11,7 @@ mod octree;
 
 fn main() {
     const GALAXY_SIZE: u32 = 2_u32.pow(14);
-    const N_RECORDS: usize = 10000;
+    const N_RECORDS: usize = 100;
     const STEPS_PER_RECORD: usize = 20;
     const N_STEPS: usize = N_RECORDS * STEPS_PER_RECORD;
 
@@ -21,7 +21,7 @@ fn main() {
     let start = Instant::now();
     let points_record = (0..N_RECORDS).map(|step| {
         for _ in 0..STEPS_PER_RECORD {
-            particles = accelerations::update_particles_barnes_hut(&particles, 1e-6, 1e-3, 1.0);
+            accelerations::update_particles_barnes_hut(&mut particles, 1e-6, 1e-3, 1.0);
         }
 
         println!("Completed step {} of {}", (step + 1), N_RECORDS);

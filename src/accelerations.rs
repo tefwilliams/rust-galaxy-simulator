@@ -1,4 +1,4 @@
-use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use rayon::iter::{IntoParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 
 use crate::{
     helpers::Vector3D,
@@ -35,11 +35,11 @@ pub fn get_new_positions(
 }
 
 pub fn update_particles_barnes_hut(
-    particles: &[MovingParticle],
+    particles: &mut [MovingParticle],
     time_step: f32,
     softening_factor: f32,
     theta: f32,
-) -> Vec<MovingParticle> {
+) {
     let size = particles
         .iter()
         .map(|p| p.particle.position.magnitude())
@@ -56,24 +56,13 @@ pub fn update_particles_barnes_hut(
             .as_slice(),
     );
 
-    particles
-        .par_iter()
-        .map(|p| {
-            let acceleration =
-                octree.get_acceleration(p.particle.position, softening_factor, theta);
+    particles.par_iter_mut().for_each(|p| {
+        let acceleration = octree.get_acceleration(p.particle.position, softening_factor, theta);
 
-            let new_vel = acceleration.multiply_by(time_step).add(p.velocity);
-            let new_pos = new_vel.multiply_by(time_step).add(p.particle.position);
-
-            MovingParticle {
-                particle: Particle {
-                    position: new_pos,
-                    ..p.particle
-                },
-                velocity: new_vel,
-            }
-        })
-        .collect()
+        // Update velocity and position directly
+        p.velocity = acceleration.multiply_by(time_step).add(p.velocity);
+        p.particle.position = p.velocity.multiply_by(time_step).add(p.particle.position);
+    });
 }
 
 pub fn get_acceleration(

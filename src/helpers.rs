@@ -10,7 +10,7 @@ pub trait Vector3D {
 
 impl Vector3D for [f32; 3] {
     fn self_dot(&self) -> f32 {
-        self.iter().map(|e| e * e).sum::<f32>()
+        self[0] * self[0] + self[1] * self[1] + self[2] * self[2]
     }
 
     fn magnitude(&self) -> f32 {

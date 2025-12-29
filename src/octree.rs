@@ -20,15 +20,25 @@ impl OctreeNode {
         softening_factor: f32,
         theta: f32,
     ) -> [f32; 3] {
-        if self.size / self.particle.position.subtract(position).magnitude() < theta
+        if self.size * self.size
+            < theta * theta * self.particle.position.subtract(position).self_dot()
             || self.number_of_items == 1
         {
             return get_acceleration_due_to_particle(position, &self.particle, softening_factor);
         }
 
-        self.children.iter().fold([0.0, 0.0, 0.0], |acc, child| {
-            acc.add(child.get_acceleration(position, softening_factor, theta))
-        })
+        let mut ax = 0.0;
+        let mut ay = 0.0;
+        let mut az = 0.0;
+
+        for i in 0..8 {
+            let a = self.children[i].get_acceleration(position, softening_factor, theta);
+            ax += a[0];
+            ay += a[1];
+            az += a[2];
+        }
+
+        [ax, ay, az]
     }
 }
 
@@ -49,19 +59,21 @@ fn generate_children(size: f32, node_center: &[f32; 3], particles: &[Particle]) 
     let new_size = size / 2_f32;
 
     // Get all 8 child node centres
-    let node_centers = repeat_n([-new_size, new_size], 3)
-        .multi_cartesian_product()
-        .map(|vec| node_center.add(vec.try_into().unwrap()))
-        .collect::<Vec<[f32; 3]>>();
+    let child_centers: [[f32; 3]; 8] = core::array::from_fn(|i| {
+        [
+            node_center[0] + if (i & 1) == 0 { -new_size } else { new_size }, // Bit 0: X
+            node_center[1] + if (i & 2) == 0 { -new_size } else { new_size }, // Bit 1: Y
+            node_center[2] + if (i & 4) == 0 { -new_size } else { new_size }, // Bit 2: Z
+        ]
+    });
 
     // Get index of node that pos is closest to
     let get_node_index = |pos: [f32; 3]| {
-        (0_usize..8_usize)
-            .min_by(|i, j| {
-                distance_between(pos, node_centers[*i])
-                    .total_cmp(&distance_between(pos, node_centers[*j]))
-            })
-            .unwrap()
+        let x = (pos[0] >= node_center[0]) as usize;
+        let y = ((pos[1] >= node_center[1]) as usize) << 1; // Wrap the cast
+        let z = ((pos[2] >= node_center[2]) as usize) << 2; // Wrap the cast
+
+        x | y | z
     };
 
     particles
@@ -71,14 +83,14 @@ fn generate_children(size: f32, node_center: &[f32; 3], particles: &[Particle]) 
         .iter()
         .filter_map(|(&node_index, node_masses)| {
             if node_masses.is_empty() {
-                None
-            } else {
-                Some(generate_node(
-                    new_size,
-                    &node_centers[node_index],
-                    node_masses.as_slice(),
-                ))
+                return None;
             }
+
+            Some(generate_node(
+                new_size,
+                &child_centers[node_index],
+                node_masses.as_slice(),
+            ))
         })
         .collect()
 }
