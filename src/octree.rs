@@ -1,9 +1,5 @@
-use itertools::{repeat_n, Itertools};
-use rand_distr::num_traits::ToPrimitive;
-
 use crate::{
-    accelerations::get_acceleration_due_to_particle,
-    helpers::{distance_between, Vector3D},
+    helpers::Vector3D,
     mass::{MassCollection, Particle},
 };
 
@@ -13,15 +9,20 @@ pub struct Octree {
 
 impl Octree {
     pub fn build(particles: &[Particle], center: [f32; 3], size: f32) -> Self {
+        // println!("Initializing octree...");
         let mut tree = Self {
             nodes: Vec::with_capacity(particles.len()),
         };
 
-        tree.nodes.push(OctreeNode {
-            particle: particles.to_single_mass(),
-            size,
-            first_child_index: 0,
-        });
+        // for p in particles.iter() {
+        //     println!(
+        //         "Particle mass: {}, position: ({}, {}, {})",
+        //         p.mass, p.position[0], p.position[1], p.position[2]
+        //     );
+        // }
+
+        // Add starting root node
+        tree.nodes.push(OctreeNode::default());
 
         tree.build_recursive(0, particles, center, size);
         tree
@@ -29,41 +30,51 @@ impl Octree {
 
     fn build_recursive(
         &mut self,
-        node_index: usize,
+        node_idx: usize,
         particles: &[Particle],
         center: [f32; 3],
         size: f32,
-    ) -> usize {
-        if particles.len() > 1 {
-            let mut octants: [Vec<Particle>; 8] = Default::default();
+    ) {
+        // println!(
+        //     "Building node at index {} with {} particles...",
+        //     node_idx,
+        //     particles.len()
+        // );
+        self.nodes[node_idx] = OctreeNode {
+            size,
+            particle: particles.to_single_mass(),
+            first_child_index: 0,
+        };
 
-            for p in particles {
-                octants[get_node_index(p.position, center)].push(p.clone());
-            }
+        // println!(
+        //     "Creating node index: {}, position: {}, mass: {}, child index: {}",
+        //     node_idx,
+        //     self.nodes[node_idx].particle.position[0],
+        //     self.nodes[node_idx].particle.mass,
+        //     self.nodes[node_idx].first_child_index
+        // );
 
-            let first_child_index = self.nodes.len() as i32;
-            self.nodes[node_index].first_child_index = first_child_index;
-
-            let child_size = size / 2.0;
-            let child_centers = get_child_centers(&center, child_size);
-
-            for i in 0..8 {
-                self.nodes.push(OctreeNode {
-                    particle: octants[i].to_single_mass(),
-                    size: child_size,
-                    first_child_index: 0,
-                });
-            }
-
-            // 5. Recursively build all 8 children
-            // We must do this even for empty octants to keep the 0..8 indexing consistent
-
-            for i in 0..8 {
-                self.build_recursive(node_index + i, &octants[i], child_centers[i], child_size);
-            }
+        if particles.len() <= 1 {
+            return;
         }
 
-        node_index
+        // Reserve 8 contiguous slots at the end of the array
+        let start_idx = self.nodes.len();
+        self.nodes[node_idx].first_child_index = start_idx as u32;
+        self.nodes.extend((0..8).map(|_| OctreeNode::default()));
+
+        // Bucket particles into octants
+        let mut buckets: Vec<Vec<Particle>> = vec![Vec::new(); 8];
+        for p in particles {
+            buckets[get_octant(center, p.position)].push(*p);
+        }
+
+        // Recurse: Process children immediately (DFS)
+        let new_size = size * 0.5;
+        for i in 0..8 {
+            let new_center = get_child_center(center, new_size, i);
+            self.build_recursive(start_idx + i, buckets[i].as_slice(), new_center, new_size);
+        }
     }
 
     pub fn get_acceleration(
@@ -74,42 +85,95 @@ impl Octree {
         theta: f32,
     ) -> [f32; 3] {
         let node = &self.nodes[idx];
-        // println!(
-        //     "Node index: {}, size: {}, first_child_index: {}",
-        //     idx, node.size, node.first_child_index
-        // );
+
+        //         println!(
+        //             "
+        // Particle ({}, {}, {}),
+        // Visiting Node: {}, position: ({}, {}, {}), mass: {}, child index: {}",
+        //             position[0],
+        //             position[1],
+        //             position[2],
+        //             idx,
+        //             node.particle.position[0],
+        //             node.particle.position[1],
+        //             node.particle.position[2],
+        //             node.particle.mass,
+        //             node.first_child_index
+        //         );
+
+        if node.is_placeholder() {
+            return [0.0; 3];
+        }
 
         if node.size * node.size
             < theta * theta * node.particle.position.subtract(position).self_dot()
-            || node.first_child_index == 0
+            || node.is_leaf()
         {
-            return node.get_acceleration(position, softening_factor);
+            let acc = node.get_acceleration(position, softening_factor);
+            // println!(
+            //     "Approximating node {} as single mass, acc: ({}, {}, {})",
+            //     idx, acc[0], acc[1], acc[2]
+            // );
+
+            return acc;
         }
+
+        // println!("Splitting node {}", idx);
 
         let mut acc = [0.0; 3];
         for i in 0..8 {
-            // println!(
-            //     "Node index: {}, size: {}, first_child_index: {}",
-            //     idx, node.size, node.first_child_index
-            // );
             let child_acc = self.get_acceleration(
                 (node.first_child_index as usize) + i,
                 position,
                 softening_factor,
                 theta,
             );
+            // println!(
+            //     "Node index: {}, acc: ({}, {}, {})",
+            //     idx, , child_acc[0], child_acc[1], child_acc[2]
+            // );
             acc[0] += child_acc[0];
             acc[1] += child_acc[1];
             acc[2] += child_acc[2];
         }
+
+        // println!(
+        //     "Node {} total acc: ({}, {}, {})",
+        //     idx, acc[0], acc[1], acc[2]
+        // );
         acc
     }
 }
 
+// --- Helpers ---
+
+fn get_octant(center: [f32; 3], position: [f32; 3]) -> usize {
+    let mut idx = 0;
+    if position[0] >= center[0] {
+        idx |= 1;
+    }
+    if position[1] >= center[1] {
+        idx |= 2;
+    }
+    if position[2] >= center[2] {
+        idx |= 4;
+    }
+    idx
+}
+
+fn get_child_center(c: [f32; 3], offset: f32, i: usize) -> [f32; 3] {
+    [
+        c[0] + if (i & 1) != 0 { offset } else { -offset },
+        c[1] + if (i & 2) != 0 { offset } else { -offset },
+        c[2] + if (i & 4) != 0 { offset } else { -offset },
+    ]
+}
+
+#[derive(Debug, Default)]
 pub struct OctreeNode {
     pub size: f32,
     pub particle: Particle,
-    pub first_child_index: i32,
+    pub first_child_index: u32,
 }
 
 impl OctreeNode {
@@ -126,74 +190,12 @@ impl OctreeNode {
 
         distance.multiply_by(self.particle.mass / dr_power_n32)
     }
+
+    pub fn is_placeholder(&self) -> bool {
+        self.particle.mass == 0.0
+    }
+
+    pub fn is_leaf(&self) -> bool {
+        self.first_child_index == 0
+    }
 }
-
-// pub fn generate_node(size: f32, node_center: &[f32; 3], particles: &[Particle]) -> OctreeNode {
-//     OctreeNode {
-//         size,
-//         particle: particles.to_single_mass(),
-//         children: if particles.len() > 1 {
-//             generate_children(size, node_center, particles)
-//         } else {
-//             Vec::new()
-//         },
-//     }
-// }
-
-fn get_child_centers(node_center: &[f32; 3], new_size: f32) -> [[f32; 3]; 8] {
-    core::array::from_fn(|i| {
-        [
-            node_center[0] + if (i & 1) == 0 { -new_size } else { new_size }, // Bit 0: X
-            node_center[1] + if (i & 2) == 0 { -new_size } else { new_size }, // Bit 1: Y
-            node_center[2] + if (i & 4) == 0 { -new_size } else { new_size }, // Bit 2: Z
-        ]
-    })
-}
-
-fn get_node_index(position: [f32; 3], node_center: [f32; 3]) -> usize {
-    let x = (position[0] >= node_center[0]) as usize;
-    let y = ((position[1] >= node_center[1]) as usize) << 1; // Wrap the cast
-    let z = ((position[2] >= node_center[2]) as usize) << 2; // Wrap the cast
-
-    x | y | z
-}
-
-// fn generate_children(size: f32, node_center: &[f32; 3], particles: &[Particle]) -> Vec<OctreeNode> {
-//     let new_size = size / 2_f32;
-
-//     // Get all 8 child node centres
-//     let child_centers: [[f32; 3]; 8] = core::array::from_fn(|i| {
-//         [
-//             node_center[0] + if (i & 1) == 0 { -new_size } else { new_size }, // Bit 0: X
-//             node_center[1] + if (i & 2) == 0 { -new_size } else { new_size }, // Bit 1: Y
-//             node_center[2] + if (i & 4) == 0 { -new_size } else { new_size }, // Bit 2: Z
-//         ]
-//     });
-
-//     // Get index of node that pos is closest to
-//     let get_node_index = |pos: [f32; 3]| {
-//         let x = (pos[0] >= node_center[0]) as usize;
-//         let y = ((pos[1] >= node_center[1]) as usize) << 1; // Wrap the cast
-//         let z = ((pos[2] >= node_center[2]) as usize) << 2; // Wrap the cast
-
-//         x | y | z
-//     };
-
-//     particles
-//         .iter()
-//         .map(|&m| (get_node_index(m.position), m))
-//         .into_group_map()
-//         .iter()
-//         .filter_map(|(&node_index, node_masses)| {
-//             if node_masses.is_empty() {
-//                 return None;
-//             }
-
-//             Some(generate_node(
-//                 new_size,
-//                 &child_centers[node_index],
-//                 node_masses.as_slice(),
-//             ))
-//         })
-//         .collect()
-// }

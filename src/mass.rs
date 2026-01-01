@@ -1,6 +1,6 @@
 use crate::helpers::{distance_between, Vector3D};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Particle {
     pub mass: f32,
     pub position: [f32; 3],
