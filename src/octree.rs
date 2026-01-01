@@ -9,17 +9,9 @@ pub struct Octree {
 
 impl Octree {
     pub fn build(particles: &[Particle], center: [f32; 3], size: f32) -> Self {
-        // println!("Initializing octree...");
         let mut tree = Self {
             nodes: Vec::with_capacity(particles.len()),
         };
-
-        // for p in particles.iter() {
-        //     println!(
-        //         "Particle mass: {}, position: ({}, {}, {})",
-        //         p.mass, p.position[0], p.position[1], p.position[2]
-        //     );
-        // }
 
         // Add starting root node
         tree.nodes.push(OctreeNode::default());
@@ -35,24 +27,11 @@ impl Octree {
         center: [f32; 3],
         size: f32,
     ) {
-        // println!(
-        //     "Building node at index {} with {} particles...",
-        //     node_idx,
-        //     particles.len()
-        // );
         self.nodes[node_idx] = OctreeNode {
             size,
             particle: particles.to_single_mass(),
             first_child_index: 0,
         };
-
-        // println!(
-        //     "Creating node index: {}, position: {}, mass: {}, child index: {}",
-        //     node_idx,
-        //     self.nodes[node_idx].particle.position[0],
-        //     self.nodes[node_idx].particle.mass,
-        //     self.nodes[node_idx].first_child_index
-        // );
 
         if particles.len() <= 1 {
             return;
@@ -86,21 +65,6 @@ impl Octree {
     ) -> [f32; 3] {
         let node = &self.nodes[idx];
 
-        //         println!(
-        //             "
-        // Particle ({}, {}, {}),
-        // Visiting Node: {}, position: ({}, {}, {}), mass: {}, child index: {}",
-        //             position[0],
-        //             position[1],
-        //             position[2],
-        //             idx,
-        //             node.particle.position[0],
-        //             node.particle.position[1],
-        //             node.particle.position[2],
-        //             node.particle.mass,
-        //             node.first_child_index
-        //         );
-
         if node.is_placeholder() {
             return [0.0; 3];
         }
@@ -109,16 +73,8 @@ impl Octree {
             < theta * theta * node.particle.position.subtract(position).self_dot()
             || node.is_leaf()
         {
-            let acc = node.get_acceleration(position, softening_factor);
-            // println!(
-            //     "Approximating node {} as single mass, acc: ({}, {}, {})",
-            //     idx, acc[0], acc[1], acc[2]
-            // );
-
-            return acc;
+            return node.get_acceleration(position, softening_factor);
         }
-
-        // println!("Splitting node {}", idx);
 
         let mut acc = [0.0; 3];
         for i in 0..8 {
@@ -128,19 +84,12 @@ impl Octree {
                 softening_factor,
                 theta,
             );
-            // println!(
-            //     "Node index: {}, acc: ({}, {}, {})",
-            //     idx, , child_acc[0], child_acc[1], child_acc[2]
-            // );
+
             acc[0] += child_acc[0];
             acc[1] += child_acc[1];
             acc[2] += child_acc[2];
         }
 
-        // println!(
-        //     "Node {} total acc: ({}, {}, {})",
-        //     idx, acc[0], acc[1], acc[2]
-        // );
         acc
     }
 }

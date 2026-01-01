@@ -1,41 +1,10 @@
-use core::net;
-
-use rayon::iter::{IntoParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
+use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 
 use crate::{
     helpers::Vector3D,
     mass::{MovingParticle, Particle},
     octree::Octree,
-    // octree::generate_node,
 };
-
-// pub fn get_new_positions(
-//     particles: &[MovingParticle],
-//     time_step: f32,
-//     softening_factor: f32,
-// ) -> (Vec<[f32; 3]>, Vec<[f32; 3]>) {
-//     particles
-//         .into_par_iter()
-//         .map(|particle| {
-//             let acceleration = get_acceleration(
-//                 particle.particle.position,
-//                 particles
-//                     .iter()
-//                     .map(|p| p.particle)
-//                     .collect::<Vec<Particle>>()
-//                     .as_slice(),
-//                 softening_factor,
-//             );
-
-//             let new_vel = acceleration.multiply_by(time_step).add(particle.velocity);
-//             let new_pos = new_vel
-//                 .multiply_by(time_step)
-//                 .add(particle.particle.position);
-
-//             (new_pos, new_vel)
-//         })
-//         .unzip()
-// }
 
 pub fn update_particles_barnes_hut(
     particles: &mut [MovingParticle],
@@ -59,30 +28,8 @@ pub fn update_particles_barnes_hut(
         size,
     );
 
-    // for i in 0..octree.nodes.len() {
-    //     let node = &octree.nodes[i];
-    //     println!(
-    //         "{}, first child: {}, mass: {}, size: {}, poisition (0): {}",
-    //         i, node.first_child_index, node.particle.mass, node.size, node.particle.position[0],
-    //     );
-    // }
-    //  generate_node(
-    //     size,
-    //     &[0.0, 0.0, 0.0],
-    //     particles
-    //         .iter()
-    //         .map(|p| p.particle)
-    //         .collect::<Vec<Particle>>()
-    //         .as_slice(),
-    // );
-
     particles.par_iter_mut().for_each(|p| {
         let acceleration = octree.get_acceleration(0, p.particle.position, softening_factor, theta);
-
-        // println!(
-        //     "Particle mass: {}, acceleration: ({}, {}, {})",
-        //     p.particle.mass, acceleration[0], acceleration[1], acceleration[2]
-        // );
 
         // Update velocity and position directly
         p.velocity = acceleration.multiply_by(time_step).add(p.velocity);

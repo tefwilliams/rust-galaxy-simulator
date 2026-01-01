@@ -39,7 +39,3 @@ impl Vector3D for [f32; 3] {
             .collect()
     }
 }
-
-pub fn distance_between(vector1: [f32; 3], vector2: [f32; 3]) -> f32 {
-    vector1.subtract(vector2).magnitude()
-}
